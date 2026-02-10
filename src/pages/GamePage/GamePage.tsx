@@ -1,17 +1,16 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
-import { DndProvider } from 'react-dnd';
-import { HTML5Backend } from 'react-dnd-html5-backend';
+import {useNavigate, useParams} from 'react-router-dom';
+import {useEffect, useMemo, useState} from 'react';
+import {DndProvider} from 'react-dnd';
+import {HTML5Backend} from 'react-dnd-html5-backend';
 
-import PlayerShipsList, { type Ship } from '../../components/PlayerShipsList';
+import PlayerShipsList, {type Ship} from '../../components/PlayerShipsList';
 import BoardCellComponent from '../../components/BoardCellComponent';
-import type { BoardCell } from '../../types/models';
-import { initialShips } from '../../utils/sheep.ts';
+import type {BoardCell} from '../../types/models';
+import {initialShips} from '../../utils/sheep.ts';
 import Waiting from '../../components/Waiting.tsx';
 import SetubBtn from '../../components/SetubBtn.tsx';
-import { useGameStore } from '../../store/fightStore.ts';
-import { useBattleSocket } from '../../hooks/useBattleSocket.ts';
-import { useUserStore } from '../../store/userStore.ts';
+import {useGameStore} from '../../store/fightStore.ts';
+import {useBattleSocket} from '../../hooks/useBattleSocket.ts';
 
 const BOARD_SIZE = 10;
 
@@ -30,14 +29,13 @@ const createEmptyBoard = (size = BOARD_SIZE): BoardCell[][] =>
 const GamePage = () => {
   const { gameId } = useParams<{ gameId: string }>();
   const { phase, setPhase, isPlayerTurn } = useGameStore();
-  const { currentUser } = useUserStore();
   const [playerShips, setPlayerShips] = useState<Ship[]>(initialShips);
   const [playerBoard, setPlayerBoard] = useState<BoardCell[][]>(createEmptyBoard());
   const [hoverCell, setHoverCell] = useState<{ x: number; y: number } | null>(null);
   const [dragShip, setDragShip] = useState<Ship | null>(null);
   const navigate = useNavigate();
 
-  const { ready } = useBattleSocket(gameId, currentUser?.id ?? null);
+  const { ready } = useBattleSocket(gameId);
 
   // Поворот корабля
   const toggleOrientation = (shipId: string) => {
