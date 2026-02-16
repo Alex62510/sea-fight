@@ -9,7 +9,7 @@ interface Props {
 const BoardEffectsLayer = ({ board }: Props) => {
   return (
     <div
-      className="absolute inset-0 pointer-events-none z-20 top-8"
+      className="absolute inset-0 pointer-events-none z-20 top-32 left-13"
       style={{ width: '400px', height: '400px' }}
     >
       {board.flat().map(

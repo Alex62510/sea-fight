@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { BoardCell, Ship } from '../types/models';
+import type { BoardCell, ChatMessage, Ship } from '../types/models';
 import { initialShips, isShipSunk, markSurroundingCells } from '../utils/sheep';
 
 interface GameStore {
@@ -20,11 +20,15 @@ interface GameStore {
   applyEnemyMove: (x: number, y: number) => void;
   setIsPlayerTurn: (value: boolean) => void;
   applyMoveResult: (x: number, y: number, hit: boolean, shooterId: number, myId: number) => void;
+  chat: ChatMessage[];
+  addChatMessage: (msg: ChatMessage) => void;
+  clearChat: () => void;
 }
 
 export const useGameStore = create<GameStore>((set) => ({
   playerBoard: [],
   enemyBoard: [],
+  chat: [],
   playerShips: initialShips,
   enemyShips: initialShips.map((s) => ({ ...s, placed: false })),
   phase: 'setup',
@@ -85,4 +89,10 @@ export const useGameStore = create<GameStore>((set) => ({
         row.map((cell) => (cell.x === x && cell.y === y ? { ...cell, isHit: true } : cell)),
       ),
     })),
+  addChatMessage: (msg) =>
+    set((state) => ({
+      chat: [...state.chat, msg],
+    })),
+
+  clearChat: () => set({ chat: [] }),
 }));

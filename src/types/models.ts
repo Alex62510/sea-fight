@@ -53,3 +53,8 @@ export interface AuthResponse {
   accessToken: string;
   user: User;
 }
+export interface ChatMessage {
+  senderId: number;
+  message: string;
+  timestamp: number;
+}

@@ -1,4 +1,4 @@
-import type { BoardCell } from '../types/models';
+import type { BoardCell, ChatMessage } from '../types/models';
 import { io, type Socket } from 'socket.io-client';
 import { useEffect, useRef } from 'react';
 import { useGameStore } from '../store/fightStore';
@@ -13,7 +13,6 @@ export const useBattleSocket = (gameId?: string) => {
 
   useEffect(() => {
     if (!gameId || !currentUser) return;
-
     const socket = io(import.meta.env.VITE_API_URL, {
       auth: { userId: currentUser.id },
       transports: ['websocket'],
@@ -24,7 +23,7 @@ export const useBattleSocket = (gameId?: string) => {
     /** ▶ старт боя */
     socket.on('battle_start', (data) => {
       setEnemyBoard(data.enemyBoard);
-      setIsPlayerTurn(data.myTurn); // ✅ ВОТ ГЛАВНОЕ
+      setIsPlayerTurn(data.myTurn);
       setPhase('battle');
     });
 
@@ -32,10 +31,15 @@ export const useBattleSocket = (gameId?: string) => {
     socket.on('shot_result', (data) => {
       applyMoveResult(data.x, data.y, data.hit, data.shooter, currentUser.id);
 
-      // обновляем ход только если сервер прислал nextTurn
       if (!data.hit) {
         setTurn(data.nextTurn, currentUser.id);
       }
+    });
+
+    /** ▶ чат от сервера */
+    socket.on('battle_chat', (msg: ChatMessage) => {
+      console.log('msg', msg);
+      useGameStore.getState().addChatMessage(msg);
     });
 
     /** ▶ конец игры */
@@ -53,6 +57,7 @@ export const useBattleSocket = (gameId?: string) => {
     };
   }, [gameId, currentUser]);
 
+  /** ▶ выстрел */
   const shoot = (x: number, y: number) => {
     if (!socketRef.current) return;
     socketRef.current.emit('shoot', {
@@ -62,11 +67,24 @@ export const useBattleSocket = (gameId?: string) => {
     });
   };
 
+  /** ▶ готовность */
   const ready = (board: BoardCell[][]) => {
     if (!socketRef.current) return;
     setPersonBoard(board);
     socketRef.current.emit('player_ready', { gameId, board });
   };
 
-  return { shoot, ready };
+  /** ▶ отправка чата */
+  const sendChat = (message: string) => {
+    if (!socketRef.current || !currentUser) return;
+
+    const cleanGameId = gameId?.replace(/^:/, '');
+
+    socketRef.current.emit('battle_chat', {
+      gameId: cleanGameId,
+      message,
+    });
+  };
+
+  return { shoot, ready, sendChat };
 };
