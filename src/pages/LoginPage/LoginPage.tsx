@@ -7,7 +7,6 @@ import axios from 'axios';
 
 const LoginPage = () => {
   const setUser = useUserStore((s) => s.setCurrentUser);
-  const statuses = useUserStore((s) => s.statuses);
   const setToken = useAuthStore((s) => s.setAccessToken);
   const navigate = useNavigate();
 
@@ -18,7 +17,7 @@ const LoginPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  console.log('statuses', statuses);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim() || !password.trim() || (mode === 'register' && !username.trim())) return;

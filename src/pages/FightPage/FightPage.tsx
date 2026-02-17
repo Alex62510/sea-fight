@@ -5,6 +5,14 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { useBattleSocket } from '../../hooks/useBattleSocket';
 import { useEffect, useRef, useState } from 'react';
 import { useUserStore } from '../../store/userStore.ts';
+import Picker from '@emoji-mart/react';
+import data from '@emoji-mart/data';
+
+type Emoji = {
+  id: string;
+  name: string;
+  native: string;
+};
 
 const BOARD_SIZE = 10;
 
@@ -14,9 +22,11 @@ const FightPage = () => {
   const navigate = useNavigate();
   const { gameId } = useParams<{ gameId: string }>();
   const { shoot, sendChat } = useBattleSocket(gameId);
-
+  const [showEmoji, setShowEmoji] = useState(false);
   const [chatInput, setChatInput] = useState('');
+  const inputRef = useRef<HTMLInputElement | null>(null);
   const chatEndRef = useRef<HTMLDivElement | null>(null);
+  const emojiRef = useRef<HTMLDivElement | null>(null);
 
   const handleEnemyCellClick = (cell: BoardCell) => {
     if (phase !== 'battle') return;
@@ -34,6 +44,19 @@ const FightPage = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chat]);
 
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (emojiRef.current && !emojiRef.current.contains(e.target as Node)) {
+        setShowEmoji(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
   const handleSendMessage = () => {
     if (!chatInput.trim()) return;
     sendChat(chatInput.trim());
@@ -42,6 +65,29 @@ const FightPage = () => {
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') handleSendMessage();
+  };
+
+  const handleEmojiSelect = (emoji: Emoji) => {
+    const native = emoji.native;
+    if (!native) return;
+
+    if (!inputRef.current) {
+      setChatInput((prev) => prev + native);
+      return;
+    }
+
+    const start = inputRef.current.selectionStart ?? chatInput.length;
+    const end = inputRef.current.selectionEnd ?? chatInput.length;
+
+    const newValue = chatInput.slice(0, start) + native + chatInput.slice(end);
+
+    setChatInput(newValue);
+
+    requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      const pos = start + native.length;
+      inputRef.current?.setSelectionRange(pos, pos);
+    });
   };
 
   return (
@@ -118,8 +164,28 @@ const FightPage = () => {
           ))}
           <div ref={chatEndRef} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center relative">
+          <button
+            type="button"
+            className="px-3 py-1 rounded-lg bg-slate-700 hover:bg-slate-600"
+            onClick={() => setShowEmoji((p) => !p)}
+          >
+            😊
+          </button>
+
+          {showEmoji && (
+            <div ref={emojiRef} className="absolute bottom-12 left-0 z-50">
+              <Picker
+                data={data}
+                onEmojiSelect={handleEmojiSelect}
+                theme="dark"
+                previewPosition="none"
+              />
+            </div>
+          )}
+
           <input
+            ref={inputRef}
             className="flex-1 px-3 py-1 rounded-lg bg-slate-700 text-white"
             type="text"
             value={chatInput}
@@ -127,6 +193,7 @@ const FightPage = () => {
             onKeyDown={handleKeyDown}
             placeholder="Написать сообщение..."
           />
+
           <button
             className="px-4 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 transition"
             onClick={handleSendMessage}
