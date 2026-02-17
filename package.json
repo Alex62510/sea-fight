@@ -11,8 +11,6 @@
     "format": "prettier --write \"src/**/*.{ts,tsx,css,scss,md}\""
   },
   "dependencies": {
-    "@emoji-mart/data": "^1.2.1",
-    "@emoji-mart/react": "^1.1.1",
     "@tailwindcss/vite": "^4.1.18",
     "axios": "^1.13.2",
     "clsx": "^2.1.1",
