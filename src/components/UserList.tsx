@@ -79,7 +79,10 @@ const UserList = () => {
       {incomingInvite !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-slate-900 p-6 rounded-xl shadow-lg flex flex-col gap-4 items-center">
-            <p className="text-white">Пользователь {incomingInvite} приглашает вас в игру</p>
+            <p className="text-white">
+              Игрок {users.find((user) => user.id === incomingInvite)?.name ?? incomingInvite}{' '}
+              вызывает вас на бой
+            </p>
             <div className="flex gap-4">
               <button
                 className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded"
@@ -102,7 +105,10 @@ const UserList = () => {
       {waitingForPlayer !== null && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-slate-900 p-6 rounded-xl shadow-lg flex flex-col gap-4 items-center">
-            <p className="text-white">Ждём игрока {waitingForPlayer}...</p>
+            <p className="text-white">
+              Ждём игрока{' '}
+              {users.find((user) => user.id === waitingForPlayer)?.name ?? waitingForPlayer}...
+            </p>
             <div className="w-8 h-8 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
           </div>
         </div>
