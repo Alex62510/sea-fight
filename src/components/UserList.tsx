@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
 import { useUserStore } from '../store/userStore';
@@ -12,31 +12,36 @@ const statusStyles = {
 };
 
 const UserList = () => {
-  const { users, currentUser, statuses } = useUserStore();
+  const { users, currentUser, statuses, updateCurrentUsername } = useUserStore();
   const navigate = useNavigate();
-
+  const [editingName, setEditingName] = useState(false);
+  const [tempName, setTempName] = useState(currentUser?.name ?? '');
   // Входящее приглашение
   const [incomingInvite, setIncomingInvite] = useState<number | null>(null);
   // Лоадер ожидания, когда отправили приглашение
   const [waitingForPlayer, setWaitingForPlayer] = useState<number | null>(null);
 
   // Подключаем сокеты и подписываемся на события
-  useLobbySocket(currentUser?.id ?? null, {
-    onInvite: (from: number) => {
-      console.log('[UserList] onInvite', from);
-      setIncomingInvite(from);
-    },
-    onStart: (gameId: string) => {
-      setIncomingInvite(null);
-      setWaitingForPlayer(null);
-      navigate(`/game/${gameId}`);
-    },
-    onAccepted: ({ from, gameId }: { from: number; gameId: string }) => {
-      console.log('[UserList] onAccepted', from, gameId);
-      setWaitingForPlayer(null);
-      navigate(`/game/${gameId}`);
-    },
-  });
+  const socketHandlers = useMemo(
+    () => ({
+      onInvite: (from: number) => {
+        setIncomingInvite(from);
+      },
+      onStart: (gameId: string) => {
+        setIncomingInvite(null);
+        setWaitingForPlayer(null);
+        navigate(`/game/${gameId}`);
+      },
+      onAccepted: ({ gameId }: { from: number; gameId: string }) => {
+        setWaitingForPlayer(null);
+        navigate(`/game/${gameId}`);
+      },
+    }),
+    [navigate],
+  );
+
+  // Подключаем сокеты и подписываемся на события
+  useLobbySocket(currentUser?.id ?? null, socketHandlers);
 
   // Отправка приглашения
   const handleInvite = (userId: number) => {
@@ -55,6 +60,17 @@ const UserList = () => {
   // Отклонить приглашение
   const handleRejectInvite = () => {
     setIncomingInvite(null);
+  };
+
+  const saveName = () => {
+    if (!tempName.trim() || !currentUser) return;
+    if (tempName.trim() === currentUser.name) {
+      setEditingName(false);
+      return;
+    }
+    updateCurrentUsername(tempName.trim()).then(() => {
+      setEditingName(false);
+    });
   };
 
   return (
@@ -95,7 +111,7 @@ const UserList = () => {
       {/* Список пользователей */}
       {users.map((user) => {
         const status = statuses[user.id] ?? 'offline';
-
+        const isCurrent = user.id === currentUser?.id;
         return (
           <div
             key={user.id}
@@ -104,7 +120,34 @@ const UserList = () => {
             <span className="absolute -inset-2 rounded-2xl bg-gradient-to-r from-blue-500/30 via-white/20 to-purple-500/30 opacity-0 blur-2xl group-hover:opacity-100 group-hover:animate-[shine_2s_linear_infinite] pointer-events-none" />
 
             <div className="relative z-10">
-              <p className="text-lg font-semibold">{user.username}</p>
+              <div className="flex items-center gap-2 ">
+                {isCurrent && editingName ? (
+                  <input
+                    value={tempName}
+                    onChange={(e) => setTempName(e.target.value)}
+                    onBlur={saveName}
+                    onKeyDown={(e) => e.key === 'Enter' && saveName()}
+                    autoFocus
+                    className="bg-slate-700 px-2 py-1 rounded text-sm outline-none text-xl"
+                  />
+                ) : (
+                  <p className="text-lg font-semibold">{user.name}</p>
+                )}
+
+                {isCurrent && !editingName && (
+                  <button
+                    onClick={() => {
+                      setTempName(user.name);
+                      setEditingName(true);
+                    }}
+                    className="text-slate-400 hover:text-white transition cursor-pointer"
+                    title="Редактировать имя"
+                  >
+                    🛠️
+                  </button>
+                )}
+              </div>
+
               <p className={clsx('text-sm', statusStyles[status])}>
                 <span
                   className={clsx(
@@ -116,7 +159,11 @@ const UserList = () => {
                     },
                   )}
                 >
-                  {status}
+                  {currentUser?.id === user.id
+                    ? status === 'offline' || status === undefined
+                      ? 'online'
+                      : status
+                    : status}
                 </span>
               </p>
 

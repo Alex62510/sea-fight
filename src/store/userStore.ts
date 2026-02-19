@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { User } from '../types/models.ts';
 import { devtools } from 'zustand/middleware';
+import { updateUserApi } from '../services/userApi.ts';
 
 interface UserState {
   currentUser: User | null;
@@ -12,12 +13,14 @@ interface UserState {
   statuses: Record<number, 'online' | 'offline' | 'in-game'>;
   setStatusesRaw: (statuses: { id: number; status: 'online' | 'offline' | 'in-game' }[]) => void;
   resetStatuses: () => void;
+
+  updateCurrentUsername: (username: string) => Promise<void>;
   setStatus: (id: number, status: 'online' | 'offline' | 'in-game') => void;
 }
 
 export const useUserStore = create<UserState>()(
   devtools(
-    (set) => ({
+    (set, get) => ({
       currentUser: null,
       users: [],
       friends: [],
@@ -49,6 +52,29 @@ export const useUserStore = create<UserState>()(
         set((state) => ({
           statuses: { ...state.statuses, [id]: status },
         })),
+      updateCurrentUsername: async (name: string) => {
+        const { currentUser, users, statuses } = get();
+        if (!currentUser) return;
+
+        try {
+          const updated = await updateUserApi(currentUser.id, { name });
+
+          set(
+            {
+              currentUser: updated,
+              users: users.map((u) => (u.id === updated.id ? updated : u)),
+              statuses: {
+                ...statuses,
+                [updated.id]: statuses[updated.id] ?? 'online',
+              },
+            },
+            false,
+            'users/updateCurrentUsername',
+          );
+        } catch (e) {
+          console.error('Failed to update username', e);
+        }
+      },
       logout: () => set({ currentUser: null }, false, 'auth/logout'),
     }),
     { name: 'User Store' },
