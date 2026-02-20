@@ -118,6 +118,8 @@ const UserList = () => {
       {users.map((user) => {
         const status = statuses[user.id] ?? 'offline';
         const isCurrent = user.id === currentUser?.id;
+        const displayStatus =
+          currentUser?.id === user.id && (!status || status === 'offline') ? 'online' : status;
         return (
           <div
             key={user.id}
@@ -154,22 +156,18 @@ const UserList = () => {
                 )}
               </div>
 
-              <p className={clsx('text-sm', statusStyles[status])}>
+              <p className={clsx('text-sm', statusStyles[displayStatus])}>
                 <span
                   className={clsx(
                     'relative px-3 py-0.5 rounded-full text-xs font-medium inline-block',
                     {
-                      'bg-green-500/20 text-green-300': status === 'online',
-                      'bg-yellow-500/20 text-yellow-300': status === 'in-game',
-                      'bg-gray-500/20 text-gray-400': status === 'offline',
+                      'bg-green-500/20 text-green-300': displayStatus === 'online',
+                      'bg-yellow-500/20 text-yellow-300': displayStatus === 'in-game',
+                      'bg-gray-500/20 text-gray-400': displayStatus === 'offline',
                     },
                   )}
                 >
-                  {currentUser?.id === user.id
-                    ? status === 'offline' || status === undefined
-                      ? 'online'
-                      : status
-                    : status}
+                  {displayStatus}
                 </span>
               </p>
 
